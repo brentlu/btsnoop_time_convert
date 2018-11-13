@@ -13,11 +13,11 @@ static void usage(char *ap)
     printf("       %s \"2018 07-29 05:19:21.984\"\n", ap);
 }
 
-static unsigned long long int local_to_btsnoop_time(struct timeval *tv)
+static unsigned long long int local_to_btsnoop_time(time_t sec, time_t usec)
 {
-    unsigned long long int timestamp = tv->tv_sec * 1000 * 1000LL;
+    unsigned long long int timestamp = sec * 1000 * 1000LL;
 
-    timestamp += tv->tv_usec;
+    timestamp += usec;
     timestamp += BTSNOOP_EPOCH_DELTA;
 
     return timestamp;
@@ -45,6 +45,7 @@ int main(int argc, char **argv)
     char buffer[80];
 
     struct timeval tv;
+    time_t sec, msec;
     unsigned long long int btsnoop_time;
 
     if (argc != 2) {
@@ -54,21 +55,20 @@ int main(int argc, char **argv)
 
     ret = sscanf(argv[1], "%d %d-%d %d:%d:%d.%d", &info.tm_year, &info.tm_mon,
                     &info.tm_mday, &info.tm_hour, &info.tm_min, &info.tm_sec,
-                    (int *)&tv.tv_usec);
+                    (int *)&msec);
     if (ret == 7) {
         info.tm_year -= 1900;
         info.tm_mon -= 1;
         info.tm_isdst = -1;
 
-        tv.tv_sec = mktime(&info);
-        if (tv.tv_sec == -1) {
+        sec = mktime(&info);
+        if (sec == -1) {
             printf("error: mktime fail\n");
         } else {
            strftime(buffer, sizeof(buffer), "%c", &info);
            printf("local time:   %s\n", buffer);
 
-           tv.tv_usec *= 1000;
-           btsnoop_time = local_to_btsnoop_time(&tv);
+           btsnoop_time = local_to_btsnoop_time(sec, msec * 1000);
 
            printf("btsnoop time: %llu\n", btsnoop_time);
         }
